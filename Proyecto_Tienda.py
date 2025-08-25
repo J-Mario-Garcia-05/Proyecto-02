@@ -339,7 +339,7 @@ while True:
     print("---SISTEMA TIENDA---")
     print("1.Gestin De proveedores")
     print("2.Gestion de inventario")
-    print("3.Ventas (caja)")
+    print("3.Ventas (cajero)")
     print("4.Gestion de Empleados")
     print("5.Salir")
     opcion = input("\nSeleccione una opcion: ")

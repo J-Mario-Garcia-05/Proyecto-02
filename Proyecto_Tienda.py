@@ -11,9 +11,9 @@ class CrearCategoria:
     def __init__(self):
         self.categorias = {}
 
-    def crear_categoria(self, id_categoria, nombre):
+    def crear_categoria(self, id_categoria, categoria:Categorias):
         if id_categoria not in self.categorias.keys():
-            self.categorias[id_categoria] = {'nombre': nombre}
+            self.categorias[id_categoria] = categoria
             print("Categoría registrada correctamente")
         else:
             raise ValueError("Ya se ha registrado una categoría con el mismo id")
@@ -115,14 +115,8 @@ class Inventario:
         else:
             raise ValueError("Producto no encontrado")
 
-    def actualizar_stock(self):
+    def actualizar_stock(self, codigo):
         pass
-
-    def eliminar_producto(self, codigo):
-        if codigo in self.inventario:
-            del self.inventario[codigo]
-        else:
-            raise ValueError("Producto no encontrado")
 
 
 class Proveedores:
@@ -150,6 +144,11 @@ class GestionProveedores:
             self.proveedores[id_proveedor] = proveedor
         else:
             raise ValueError("Ya existe un provedor con el mismo ID")
+
+    def buscar(self, id_proveedor):
+        if id_proveedor in self.proveedores:
+            return self.proveedores[id_proveedor]
+        return None
 
 
 class Clientes:
@@ -211,6 +210,7 @@ class Ventas:
         self.fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         self.cliente = nit_cliente
         self.empleado = empleado.nombre
+        self.detalles = []
         self.total = 0
 
     def __str__(self):
@@ -225,6 +225,9 @@ class AgregarVentas:
     def crear_venta(self, id_venta, venta: Ventas):
         self.ventas[id_venta] = venta
 
+    def agregar_detalle(self, id_venta, detalle):
+        self.ventas[id_venta].detalles.append(detalle)
+
 
 class DetalleVentas:
     def __init__(self, id_detalle, num_venta: Ventas, producto: Productos, cantidad):
@@ -233,7 +236,7 @@ class DetalleVentas:
         self.producto = producto.nombre
         self.cantidad = cantidad
         self.precio = producto.precio
-        self.sub_total = producto.precio * cantidad
+        self.sub_total = producto.precio * self.cantidad
 
     def __str__(self):
         return f'{self.num_venta} \t|\t{self.producto} \t|\t{self.cantidad} \t|\t{self.precio} \nSubtotal: {self.sub_total}'
@@ -243,8 +246,12 @@ class GestionDetallesVenta:
     def __init__(self):
         self.detalle_ventas = {}
 
-    def agregar_detalles(self, id_detalle, detalle_ventas:DetalleVentas):
+    def agregar_detalles(self, id_detalle, detalle_ventas: DetalleVentas):
         self.detalle_ventas[id_detalle] = detalle_ventas
+
+    def aumentar_cantidad(self, id_detalle, cantidad):
+        self.detalle_ventas[id_detalle].cantidad += cantidad
+
 
 class Compras:
     def __init__(self, id_compra, proveedor: Proveedores, empleado: Empleados):
@@ -252,11 +259,23 @@ class Compras:
         self.fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         self.proveedor = proveedor.nombre
         self.empleado = empleado.nombre
+        self.detalles = []
         self.total = 0
 
     def __str__(self):
         return (f'Código de compra: {self.id_compra} \t|\tFecha y hora de la compra: {self.fecha_hora}'
                 f'\t|\tProveedor: {self.proveedor} \t|\tEncargado de compra: {self.empleado}')
+
+
+class GestionCompras:
+    def __init__(self):
+        self.compras = {}
+
+    def agregar_compra(self, id_compra, compra):
+        self.compras[id_compra] = compra
+
+    def agregar_detalle(self, id_compra, detalle):
+        self.compras[id_compra].detalles.append(detalle)
 
 
 class DellateCompras:
@@ -275,14 +294,60 @@ class DellateCompras:
             f'\t|\tCantidad comprada: {self.cantidad} \t|\t fecha de caducidad: {self.fecha_caducidad} \nSubtotal: {self.sub_total}')
 
 
+class CrearDetalleCompra:
+    def __init__(self):
+        self.detalle_compra = {}
+
+    def agregar_detalle_compra(self, id_detalle, detalle_compra):
+        self.detalle_compra[id_detalle] = detalle_compra
+
+    def aumentar_cantidad(self, id_detalle, cantidad):
+        self.detalle_compra[id_detalle].cantidad += cantidad
+
+
 class Menu:
     def mostrar_menu(self):
         pass
 
 
-class MenuProductos(Menu):
-    @staticmethod
-    def mostrar_menu_productos():
+class MenuCaja(Menu):
+    def mostrar_menu(self):
+        while True:
+            print("---MENÚ Cajero---")
+            print("1.Cobrar")
+            print("2.Salir")
+            opt1 = input("\nSeleccione una opción: ")
+            if opt1 == "1":
+
+                print("Ingrese los códigos de productos ('0' para finalizar): ")
+                while True:
+                    codigo = input("Código de producto:")
+                    if codigo == "0":
+                        break
+            elif opt1 == "2":
+                print("Regresando al menú principal...")
+                break
+
+#MENÚ Principal
+import getpass
+num_ventas = 0
+empleados = GestionEmpleado()
+categoria = CrearCategoria()
+proveedores = GestionProveedores()
+inventario = Inventario()
+while True:
+    print("---SISTEMA TIENDA---")
+    print("1.Gestin De proveedores")
+    print("2.Gestion de inventario")
+    print("3.Ventas (caja)")
+    print("4.Gestion de Empleados")
+    print("5.Salir")
+    opcion = input("\nSeleccione una opcion: ")
+    if opcion == "2":
+        pin = input("Ingrese el PIN de acceso: ")
+        if pin != "admin123":
+            print("❗Acceso no permitido, pin no válido")
+            continue
         while True:
             print("--MENÚ gestión de productos--")
             print("1.Registrar productos")
@@ -292,34 +357,66 @@ class MenuProductos(Menu):
             print("5.Salir")
             opcion = input("\nSeleccione una opción: ")
             if opcion == "1":
+                if not proveedores.proveedores:
+                    confirmar = input("No hay proveedores registrados, ¿desea registrar alguno? (S/N): ")
+                    if confirmar.lower() == "s":
+                        id_proveedor = input("Ingrese el ID del proveedor: ")
+                    elif confirmar.lower() == "n":
+                        print("Regresando al menú...")
+                        continue
+                    else:
+                        print("Confirmación no válida, regresadmno al menú...")
+                        continue
                 print("Ingrese los códigos de los productos, ingrese '0' para finalizar: ")
                 while True:
                     codigo = input("Codigo del producto: ")
+                    if codigo in inventario.inventario.keys():
+                        print("Ya existe el producto")
                     if codigo == "0":
                         break
                     nombre = input("\tNombre: ")
-                    precio = input("\tPrecio: ")
-                    categoria = input("\tId de categoria: ")
-                    if CrearCategoria.buscar_categoria(categoria) is None:
-                        print("No se encontró una categoría con el id ingresado, intente de nuevo")
+                    while True:
+                        id_categoria = input("\tId de categoria: ")
+                        if categoria.buscar_categoria(id_categoria) is None:
+                            print("No se encontró una categoría con el id ingresado, intente de nuevo")
+                            continue
+                        break
+                    while True:
+                        try:
+                            precio = float(input("\tPrecio: Q."))
+                            if precio < 0:
+                                print("El precio debe ser mayor a 0")
+                            break
+                        except ValueError:
+                            print("ERROR: Precio ingresado no válido")
+                    producto = Productos(codigo, nombre, categoria, precio)
+                    inventario.agregar_producto(producto)
+            elif opcion == "2":
+                print("Ralizar compras (ingrese 0 para finalizar):")
+                while True:
+                    codigo = input("Ingrese el código de producto: ")
+                    if codigo == "0":
+                        break
+                    buscar = inventario.buscar_producto(codigo)
+                    if buscar is None:
+                        print("No se encontró ningun producto")
+                        continue
+                    while True:
+                        try:
+                            cantidad = int(input(f"\tCantidad de {buscar} que desea comprar: "))
+                            if cantidad < 0:
+                                raise ValueError("El cantidad debe ser mayor a 0")
+                            break
+                        except ValueError as e:
+                            print("Ha ocurrido un error: ", e)
+                    proveedor = input("\tIngrese el Id del proveedor: ")
+                    if GestionProveedores.buscar(proveedor) is None:
+                        print("No se encontre a ningún proveedor")
+                        continue
             elif opcion == "5":
                 print("Regresando al menú principal")
                 break
-
-
-class MenuCaja(Menu):
-    def mostrar_menu(self):
-        while True:
-            print("---MENÚ Cajero---")
-            print("1.Cobrar")
-            print("2.Salir")
-            opcion = input("\nSeleccione una opción: ")
-            if opcion == "1":
-                print("Ingrese los códigos de productos ('0' para finalizar): ")
-                while True:
-                    codigo = input("Código de producto:")
-                    if codigo == "0":
-                        break
-            elif opcion == "2":
-                print("Regresando al menú principal...")
-                break
+    if opcion == "2":
+        if inventario:
+            print("No se ha realizado ninguna compra de los productos")
+            continue

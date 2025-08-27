@@ -11,9 +11,9 @@ class CrearCategoria:
     def __init__(self):
         self.categorias = {}
 
-    def crear_categoria(self, id_categoria, categoria:Categorias):
+    def crear_categoria(self, categoria: Categorias):
         if id_categoria not in self.categorias.keys():
-            self.categorias[id_categoria] = categoria
+            self.categorias[categoria.id_categoria] = categoria
             print("Categoría registrada correctamente")
         else:
             raise ValueError("Ya se ha registrado una categoría con el mismo id")
@@ -176,10 +176,10 @@ class GestionCliente:
 
 
 class Empleados:
-    def __init__(self, id_empleado, nombre, rol, telefono, direccion, correo):
+    def __init__(self, id_empleado, nombre, departamento, telefono, direccion, correo):
         self.id_empleado = id_empleado
         self.nombre = nombre
-        self.rol = rol
+        self.departamento = departamento
         self.telefono = telefono
         self.direccion = direccion
         self.correo = correo
@@ -199,6 +199,11 @@ class GestionEmpleado:
             print("Empleado registrado correctamente")
         else:
             raise ValueError("Ya existe un empleado con el mismo ID")
+
+    def buscar_empleado(self, id_empleado):
+        if id_empleado in self.empleados.keys():
+            return self.empleados[id_empleado]
+        return None
 
 
 from datetime import datetime  # para obtener fecha y hora
@@ -305,31 +310,9 @@ class CrearDetalleCompra:
         self.detalle_compra[id_detalle].cantidad += cantidad
 
 
-class Menu:
-    def mostrar_menu(self):
-        pass
-
-
-class MenuCaja(Menu):
-    def mostrar_menu(self):
-        while True:
-            print("---MENÚ Cajero---")
-            print("1.Cobrar")
-            print("2.Salir")
-            opt1 = input("\nSeleccione una opción: ")
-            if opt1 == "1":
-
-                print("Ingrese los códigos de productos ('0' para finalizar): ")
-                while True:
-                    codigo = input("Código de producto:")
-                    if codigo == "0":
-                        break
-            elif opt1 == "2":
-                print("Regresando al menú principal...")
-                break
-
-#MENÚ Principal
+# MENÚ Principal
 import getpass
+
 num_ventas = 0
 empleados = GestionEmpleado()
 categoria = CrearCategoria()
@@ -337,20 +320,33 @@ proveedores = GestionProveedores()
 inventario = Inventario()
 while True:
     print("---SISTEMA TIENDA---")
-    print("1.Gestin De proveedores")
-    print("2.Gestion de inventario")
+    print("1.Gestión de Empleados")
+    print("2.Gestión de bodega")
     print("3.Ventas (cajero)")
-    print("4.Gestion de Empleados")
-    print("5.Salir")
+    print("4.Salir")
     opcion = input("\nSeleccione una opcion: ")
-    if opcion == "2":
-        pin = input("Ingrese el PIN de acceso: ")
-        if pin != "admin123":
+    if opcion == "1":
+        pin = input("Ingrese el PIN de acceso")
+        if pin != "Admin123":
             print("❗Acceso no permitido, pin no válido")
             continue
+    elif opcion == "2":
+        if not empleados.empleados:
+            print("No hay empleados en el sistema")
+        buscar = empleados.buscar_empleado(input("Ingrese su ID de empleado: "))
+        if buscar is None:
+            print("El ID ingresado no existe")
+            continue
+        elif buscar.departamento != "Cordinador de bodega":
+            print("El empleado no pertenece al departamento de cordinador de bodega, no puede ingresar a esta área")
+            continue
+        pin = input("Ingrese la contraseña de acceso: ")
+        if pin != "CoBodega123":
+            print("❗Acceso no permitido, contraseña no válida")
+            continue
         while True:
-            print("--MENÚ gestión de productos--")
-            print("1.Registrar productos")
+            print("--MENÚ gestión de bodega--")
+            print("1.Gestión de proveedores")
             print("2.Comprar productos (actualizar stock)")
             print("3.Ver todos los productos")
             print("4.Modificar precios")
@@ -365,42 +361,47 @@ while True:
                         print("Regresando al menú...")
                         continue
                     else:
-                        print("Confirmación no válida, regresadmno al menú...")
+                        print("Confirmación no válida, regresando al menú...")
                         continue
-                print("Ingrese los códigos de los productos, ingrese '0' para finalizar: ")
-                while True:
-                    codigo = input("Codigo del producto: ")
-                    if codigo in inventario.inventario.keys():
-                        print("Ya existe el producto")
-                    if codigo == "0":
-                        break
-                    nombre = input("\tNombre: ")
-                    while True:
-                        id_categoria = input("\tId de categoria: ")
-                        if categoria.buscar_categoria(id_categoria) is None:
-                            print("No se encontró una categoría con el id ingresado, intente de nuevo")
-                            continue
-                        break
-                    while True:
-                        try:
-                            precio = float(input("\tPrecio: Q."))
-                            if precio < 0:
-                                print("El precio debe ser mayor a 0")
-                            break
-                        except ValueError:
-                            print("ERROR: Precio ingresado no válido")
-                    producto = Productos(codigo, nombre, categoria, precio)
-                    inventario.agregar_producto(producto)
             elif opcion == "2":
                 print("Ralizar compras (ingrese 0 para finalizar):")
                 while True:
                     codigo = input("Ingrese el código de producto: ")
                     if codigo == "0":
                         break
-                    buscar = inventario.buscar_producto(codigo)
+                    buscar = inventario.buscar_producto("codigo", codigo)
                     if buscar is None:
-                        print("No se encontró ningun producto")
-                        continue
+                        confirmar = input("El producto no existe, ¿desea registrarlo? S/N: ")
+                        if confirmar.lower() == "s":
+                            nombre = input("\tNombre: ")
+                            while True:
+                                id_categoria = input("\tId de categoria: ")
+                                if categoria.buscar_categoria(id_categoria) is None:
+                                    confirmar = input("La categoría no existe, ¿Desea registrarlo? S/N: ")
+                                    if confirmar.lower() == "s":
+                                        nombre = input("\tNombre: ")
+                                        agregar_categoria = Categorias(id_categoria, nombre)
+                                        categoria.crear_categoria(agregar_categoria)
+                                        break
+                                    elif confirmar.lower() == "n":
+                                        pass
+                                    else:
+                                        print("Confirmación no válida")
+                            while True:
+                                try:
+                                    precio = float(input("\tPrecio: Q."))
+                                    if precio < 0:
+                                        print("El precio debe ser mayor a 0")
+                                    break
+                                except ValueError:
+                                    print("ERROR: Precio ingresado no válido")
+                            producto = Productos(codigo, nombre, categoria, precio)
+                            inventario.agregar_producto(producto)
+                            break
+                        elif confirmar.lower() == "n":
+                            pass
+                        else:
+                            print("Confirmación no válida")
                     while True:
                         try:
                             cantidad = int(input(f"\tCantidad de {buscar} que desea comprar: "))
@@ -409,14 +410,25 @@ while True:
                             break
                         except ValueError as e:
                             print("Ha ocurrido un error: ", e)
-                    proveedor = input("\tIngrese el Id del proveedor: ")
-                    if GestionProveedores.buscar(proveedor) is None:
+                    id_proveedor = input("\tIngrese el Id del proveedor: ")
+                    if GestionProveedores.buscar(id_proveedor) is None:
                         print("No se encontre a ningún proveedor")
                         continue
             elif opcion == "5":
                 print("Regresando al menú principal")
                 break
-    if opcion == "2":
+    elif opcion == "3":
         if inventario:
             print("No se ha realizado ninguna compra de los productos")
             continue
+    elif opcion == "5":
+        confirmar = input("¿Está seguro que desea salir del programa? S/N: ")
+        if confirmar.lower() == "n":
+            print("Regresando al menú...")
+        elif confirmar.lower() == "s":
+            print("Saliendo del programa, tenga buen día...")
+            break
+        else:
+            print("Confirmación no válida, regresando al menú...")
+    else:
+        print("Opción no disponible")

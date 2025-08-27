@@ -10,11 +10,31 @@ class Categorias:
 class CrearCategoria:
     def __init__(self):
         self.categorias = {}
+        self.cargar_categorias()
+
+    def cargar_categorias(self):
+        try:
+            with open('categorias.txt', 'r', encoding="utf-8") as file:
+                for linea in file:
+                    linea = linea.strip()
+                    if linea:
+                        id_categoria, nombre = linea.split(':')
+                        categoria = Categorias(id_categoria, nombre)
+                        self.categorias[id_categoria] = categoria
+                print("Categorias cargadas exitosamente")
+        except FileNotFoundError:
+            print("No existe el archivo categorias.txt, se creará uno al guardar")
+
+    def guardar_categorias(self):
+        with open('categorias.txt', 'w', encoding="utf-8") as file:
+            for id_categoria, categoria in self.categorias.items():
+                file.write(f'{id_categoria}:{categoria.nombre}\n')
 
     def crear_categoria(self, categoria: Categorias):
-        if id_categoria not in self.categorias.keys():
+        if categoria.id_categoria not in self.categorias.keys():
             self.categorias[categoria.id_categoria] = categoria
-            print("Categoría registrada correctamente")
+            self.cargar_categorias()
+            print(f"Categoría {categoria.id_categoria} correctamente")
         else:
             raise ValueError("Ya se ha registrado una categoría con el mismo id")
 
@@ -95,11 +115,32 @@ class Buscador:
 class Inventario:
     def __init__(self):
         self.inventario = {}
+        self.cargar_productos()
+
+    def cargar_productos(self):
+        try:
+            with open('productos.txt', 'r', encoding="utf-8") as file:
+                for linea in file:
+                    linea = linea.strip()
+                    if linea:
+                        id_producto, nombre, id_categoria, precio = linea.split(':')
+                        producto = Productos(id_producto, nombre, id_categoria, precio)
+                        self.inventario[id_categoria] = producto
+                print("Productos importados correctamente")
+        except FileNotFoundError:
+            print("No existe el archivo productos.txt, se creará uno al guardar")
+
+    def guardar_productos(self):
+        with open('productos.txt', 'w', encoding="utf-8") as file:
+            for id_producto, producto in self.inventario.items():
+                file.write(f'{id_producto}:{producto.nombre}:{producto.categoria}:{producto.precio}\n')
 
     def agregar_producto(self, producto: Productos):
         if producto.id_producto in self.inventario:
             raise ValueError('Ya existe un producto con el mismo código')
         self.inventario[producto.id_producto] = producto
+        self.cargar_productos()
+        print("Productos agregados correctamente")
 
     def listar_productos(self, clave):
         lista = list(self.inventario.values())
@@ -138,10 +179,33 @@ class Proveedores:
 class GestionProveedores:
     def __init__(self):
         self.proveedores = {}
+        self.cargar_proveedores()
 
-    def agregar_proveedor(self, id_proveedor, proveedor: Proveedores):
-        if id_proveedor not in self.proveedores:
-            self.proveedores[id_proveedor] = proveedor
+    def cargar_proveedores(self):
+        try:
+            with open('proveedores.txt', 'r', encoding="utf-8") as file:
+                for linea in file:
+                    linea = linea.strip()
+                    if linea:
+                        id_proveedor, nombre, empresa, telefono, direccion, correo, categoria = linea.split(':')
+                        proveedor = Proveedores(id_proveedor, nombre, empresa, telefono, direccion, correo, categoria)
+                        self.proveedores[id_proveedor] = proveedor
+                print("Productos importados correctamente")
+        except FileNotFoundError:
+            print("No existe el archivo productos.txt, se creará uno al guardar")
+
+    def guardar_proveedores(self):
+        with open('proveedores.txt', 'w', encoding="utf-8") as file:
+            for id_proveedor, proveedor in self.proveedores.items():
+                file.write(
+                    f'{id_proveedor}:{proveedor.nombre}:{proveedor.empresa}:{proveedor.telefono}:{proveedor.direccion}:'
+                    f'{proveedor.correo}:{proveedor.categoria}\n')
+
+    def agregar_proveedor(self, proveedor: Proveedores):
+        if proveedor.id_proveedor not in self.proveedores:
+            self.proveedores[proveedor.id_proveedor] = proveedor
+            self.guardar_proveedores()
+            print("Proveedor agregado correctamente")
         else:
             raise ValueError("Ya existe un provedor con el mismo ID")
 
@@ -167,10 +231,31 @@ class Clientes:
 class GestionCliente:
     def __init__(self):
         self.clientes = {}
+        self.cargar_clientes()
+
+    def cargar_clientes(self):
+        try:
+            with open("clientes.txt", "r", encoding="utf-8") as archivo:
+                for linea in archivo:
+                    linea = linea.strip()
+                    if linea:
+                        nit, nombre, direccion, telefono, correo = linea.split(":")
+                        cliente = Clientes(nit,nombre,telefono,direccion,correo)
+                        self.clientes[nit] = cliente
+            print("Clientes importados desde clientes.txt")
+        except FileNotFoundError:
+            print("No existe el archivo clientes.txt, se creará uno nuevo al guardar.")
+
+    def guardar_clientes(self):
+        with open("clientes.txt", "w", encoding="utf-8") as archivo:
+            for nit, datos in self.clientes.items():
+                archivo.write(f"{nit}:{datos.nombre}:{datos.direccion}:{datos.telefono}:{datos.correo}\n")
 
     def agregar_cliente(self, nit, cliente):
         if nit not in self.clientes:
             self.clientes[nit] = cliente
+            self.guardar_clientes()
+            print("Cliente registrado correctamente")
         else:
             raise ValueError("Ya existe un cliente con el mismo NIT")
 
@@ -192,10 +277,31 @@ class Empleados:
 class GestionEmpleado:
     def __init__(self):
         self.empleados = {}
+        self.cargar_empleado()
 
-    def agregar_empleado(self, id_empleado, empleado):
-        if id_empleado not in self.empleados:
-            self.empleados[id_empleado] = empleado
+    def cargar_empleado(self):
+        try:
+            with open("empleados.txt", "r", encoding="utf-8") as archivo:
+                for linea in archivo:
+                    linea = linea.strip()
+                    if linea:
+                        id_empleado, nombre, departamento, telefono, direccion, correo = linea.split(":")
+                        empleado = Empleados(id_empleado, nombre, departamento, telefono, direccion, correo)
+                        self.empleados[id_empleado] = empleado
+                print("Empleados importados correctamente")
+        except FileNotFoundError:
+            print("No existe el archivo empleados.txt, se creará uno al guardar")
+
+    def guardar_empleado(self):
+        with open("empleados.txt", "w", encoding="utf-8") as archivo:
+            for id_empleado, empleado in self.empleados.items():
+                archivo.write(f"{id_empleado}:{empleado.nombre}:{empleado.departamento}:{empleado.telefono}:"
+                              f"{empleado.direcciom}:{empleado.correo}\n")
+
+    def agregar_empleado(self, empleado: Empleados):
+        if empleado.id_empleado not in self.empleados:
+            self.empleados[empleado.id_empleado] = empleado
+            self.guardar_empleado()
             print("Empleado registrado correctamente")
         else:
             raise ValueError("Ya existe un empleado con el mismo ID")
@@ -223,9 +329,18 @@ class Ventas:
                 f'\t|\tEncargado de venta: {self.empleado}')
 
 
-class AgregarVentas:
+class ControlVentas:
     def __init__(self):
         self.ventas = {}
+        self.cargar_ventas()
+
+    def cargar_ventas(self):
+        try:
+            with open("ventas.txt", "r", encoding="utf-8") as archivo:
+                for linea in archivo:
+                    pass
+        except FileNotFoundError:
+            print("No existe el archivo ventas.txt, se creará uno al guardar")
 
     def crear_venta(self, id_venta, venta: Ventas):
         self.ventas[id_venta] = venta
@@ -330,6 +445,39 @@ while True:
         if pin != "Admin123":
             print("❗Acceso no permitido, pin no válido")
             continue
+        print("--MENÚ Gestión de empleados--")
+        print("1.Contratar empleado")
+        print("2.Mostrar empleados")
+        print("3.Despedir empleado")
+        print("4.Salir")
+        opcion = input("\nSeleccione una opcion: ")
+        if opcion == "1":
+            while True:
+                print("Contratar Empleado: ")
+                id_empleado = input("ID de emplead@: ")
+                if id_empleado in empleados.empleados.keys():
+                    print("Ya existe un empleado con el id.")
+                    continue
+                nombre = input("\tNombre: ")
+                while True:
+                    departamento = input("\tDepartamento: ")
+                    if departamento not in ["Cordinador de bodega", "Recursos Humanos", "Gerente", "Ventas"]:
+                        print("Departamento no disponible")
+                        continue
+                    break
+                while True:
+                    try:
+                        telefono = int(input("\tTeléfono: "))
+                        if telefono < 0:
+                            print("Teléfono no válido")
+                            continue
+                        break
+                    except ValueError as e:
+                        print("Ha ocurrido un error", e)
+                direccion = input("\tDireccion: ")
+                correo = input("\tCorreo: ")
+                agregar_empleado = Empleados(id_empleado, nombre, departamento, telefono, direccion, correo)
+                empleados.agregar_empleado(agregar_empleado)
     elif opcion == "2":
         if not empleados.empleados:
             print("No hay empleados en el sistema")
@@ -411,7 +559,7 @@ while True:
                         except ValueError as e:
                             print("Ha ocurrido un error: ", e)
                     id_proveedor = input("\tIngrese el Id del proveedor: ")
-                    if GestionProveedores.buscar(id_proveedor) is None:
+                    if proveedores.buscar(id_proveedor) is None:
                         print("No se encontre a ningún proveedor")
                         continue
             elif opcion == "5":

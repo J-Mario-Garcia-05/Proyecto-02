@@ -240,7 +240,7 @@ class GestionCliente:
                     linea = linea.strip()
                     if linea:
                         nit, nombre, direccion, telefono, correo = linea.split(":")
-                        cliente = Clientes(nit,nombre,telefono,direccion,correo)
+                        cliente = Clientes(nit, nombre, telefono, direccion, correo)
                         self.clientes[nit] = cliente
             print("Clientes importados desde clientes.txt")
         except FileNotFoundError:
@@ -312,15 +312,15 @@ class GestionEmpleado:
         return None
 
 
-from datetime import datetime  # para obtener fecha y hora
+# from datetime import datetime  # para obtener fecha y hora
 
 
 class Ventas:
-    def __init__(self, id_venta, nit_cliente, empleado: Empleados):
+    def __init__(self, id_venta, fecha_hora, nit_cliente, empleado):
         self.id_venta = id_venta
-        self.fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        self.fecha_hora = fecha_hora
         self.cliente = nit_cliente
-        self.empleado = empleado.nombre
+        self.empleado = empleado
         self.detalles = []
         self.total = 0
 
@@ -338,47 +338,81 @@ class ControlVentas:
         try:
             with open("ventas.txt", "r", encoding="utf-8") as archivo:
                 for linea in archivo:
-                    pass
+                    linea = linea.strip()
+                    if linea:
+                        id_venta, fecha_hora, nit_cliente, empleado = linea.split(";")
+                        cargar_venta = Ventas(id_venta, fecha_hora, nit_cliente, empleado)
+                        self.ventas[id_venta] = cargar_venta
+                print("Datos de ventas importados correctamente")
         except FileNotFoundError:
             print("No existe el archivo ventas.txt, se creará uno al guardar")
 
-    def crear_venta(self, id_venta, venta: Ventas):
-        self.ventas[id_venta] = venta
+    def guardar_ventas(self):
+        with open("ventas.txt", "w", encoding="utf-8") as archivo:
+            for id_venta, venta in self.ventas.items():
+                archivo.write(f"{id_venta};{venta.fecha_hora};{venta.nit_cliente};{venta.empleado}\n")
+
+    def crear_venta(self, venta: Ventas):
+        self.ventas[venta.id_venta] = venta
+        self.guardar_ventas()
 
     def agregar_detalle(self, id_venta, detalle):
         self.ventas[id_venta].detalles.append(detalle)
+        self.ventas[id_venta].total = sum(self.ventas[id_venta].detalles.subtotal)
 
 
 class DetalleVentas:
-    def __init__(self, id_detalle, num_venta: Ventas, producto: Productos, cantidad):
+    def __init__(self, id_detalle, num_venta, producto, cantidad, precio):
         self.id_detalle = id_detalle
-        self.num_venta = num_venta.id_venta
-        self.producto = producto.nombre
+        self.num_venta = num_venta
+        self.producto = producto
         self.cantidad = cantidad
-        self.precio = producto.precio
-        self.sub_total = producto.precio * self.cantidad
+        self.precio = precio
+        self.sub_total = precio * self.cantidad
 
     def __str__(self):
-        return f'{self.num_venta} \t|\t{self.producto} \t|\t{self.cantidad} \t|\t{self.precio} \nSubtotal: {self.sub_total}'
+        return (f'{self.num_venta} \t|\t{self.producto} \t|\t{self.cantidad} \t|\tQ.{self.precio}'
+                f'\nSubtotal: Q.{self.sub_total:.2f}')
 
 
 class GestionDetallesVenta:
     def __init__(self):
         self.detalle_ventas = {}
+        self.cargar_detalles()
+
+    def cargar_detalles(self):
+        try:
+            with open("detalle_ventas.txt", "r", encoding="utf-8") as archivo:
+                for linea in archivo:
+                    linea = linea.strip()
+                    if linea:
+                        id_detalle, num_venta, producto, cantidad, precio = linea.split(";")
+                        cargar_detalle = DetalleVentas(id_detalle, num_venta, producto, cantidad, precio)
+                        self.detalle_ventas[id_detalle] = cargar_detalle
+                print("Datos de detalles de ventas importados correctamente")
+        except FileNotFoundError:
+            print("No existe el archivo detalle_ventas.txt, se creará uno al guardar")
+
+    def guardar_detalles(self):
+        with open("detalle_ventas.txt", "w", encoding="utf-8") as archivo:
+            for id_detalle, detalle in self.detalle_ventas.items():
+                archivo.write(
+                    f"{id_detalle};{detalle.num_venta};{detalle.producto};{detalle.cantidad};{detalle.precio}\n")
 
     def agregar_detalles(self, id_detalle, detalle_ventas: DetalleVentas):
         self.detalle_ventas[id_detalle] = detalle_ventas
+        self.guardar_detalles()
 
     def aumentar_cantidad(self, id_detalle, cantidad):
         self.detalle_ventas[id_detalle].cantidad += cantidad
 
 
 class Compras:
-    def __init__(self, id_compra, proveedor: Proveedores, empleado: Empleados):
+    def __init__(self, id_compra, fecha_hora, proveedor, empleado):
         self.id_compra = id_compra
-        self.fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        self.proveedor = proveedor.nombre
-        self.empleado = empleado.nombre
+        self.fecha_hora = fecha_hora
+        self.proveedor = proveedor
+        self.empleado = empleado
         self.detalles = []
         self.total = 0
 
@@ -390,19 +424,40 @@ class Compras:
 class GestionCompras:
     def __init__(self):
         self.compras = {}
+        self.cargar_compras()
+
+    def cargar_compras(self):
+        try:
+            with open("compras.txt", "r", encoding="utf-8") as archivo:
+                for linea in archivo:
+                    linea = linea.strip()
+                    if linea:
+                        id_compra, fecha_hora, proveedor, empleado = linea.split(";")
+                        cargar_compra = Compras(id_compra, fecha_hora, proveedor, empleado)
+                        self.compras[id_compra] = cargar_compra
+                print("Datos de compras importados correctamente")
+        except FileNotFoundError:
+            print("No existe el archivo compras.txt, se creará uno al guardar")
+
+    def guardar_detalles(self):
+        with open("comprar.txt", "w", encoding="utf-8") as archivo:
+            for id_compra, compra in self.compras.items():
+                archivo.write(f"{id_compra};{compra.fecha_hora};{compra.proveedor};{compra.empleado}\n")
 
     def agregar_compra(self, id_compra, compra):
         self.compras[id_compra] = compra
+        self.guardar_detalles()
 
     def agregar_detalle(self, id_compra, detalle):
         self.compras[id_compra].detalles.append(detalle)
+        self.compras[id_compra].total = sum(self.compras[id_compra].detalles.subtotal)
 
 
 class DellateCompras:
-    def __init__(self, id_dellate, num_compra: Compras, producto: Productos, precio_compra, cantidad, fecha_caducidad):
+    def __init__(self, id_dellate, num_compra, producto, precio_compra, cantidad, fecha_caducidad):
         self.id_dellate = id_dellate
-        self.num_compra = num_compra.id_compra
-        self.producto = producto.nombre
+        self.num_compra = num_compra
+        self.producto = producto
         self.precio_compra = precio_compra
         self.cantidad = cantidad
         self.fecha_caducidad = fecha_caducidad
@@ -410,29 +465,56 @@ class DellateCompras:
 
     def __str__(self):
         return (
-            f'Compra No. {self.num_compra} \t|\t Nombre del producto: {self.producto} \t|\t Precio de compra: {self.precio_compra}'
-            f'\t|\tCantidad comprada: {self.cantidad} \t|\t fecha de caducidad: {self.fecha_caducidad} \nSubtotal: {self.sub_total}')
+            f'Compra No. {self.num_compra} \t|\t Nombre del producto: {self.producto} \t|\t '
+            f'Precio de compra: {self.precio_compra}'
+            f'\t|\tCantidad comprada: {self.cantidad} \t|\t fecha de caducidad: {self.fecha_caducidad}'
+            f'\nSubtotal: {self.sub_total}')
 
 
 class CrearDetalleCompra:
     def __init__(self):
         self.detalle_compra = {}
+        self.cargar_detalles()
+
+    def cargar_detalles(self):
+        try:
+            with open("detalle_compras.txt", "r", encoding="utf-8") as archivo:
+                for linea in archivo:
+                    linea = linea.strip()
+                    if linea:
+                        id_detalle, num_compra, producto, precio_compra, cantidad, fecha_caducidad = linea.split(";")
+                        cargar_detalle = DellateCompras(id_detalle, num_compra, producto, precio_compra, cantidad,
+                                                        fecha_caducidad)
+                        self.detalle_compra[id_detalle] = cargar_detalle
+                print("Datos de detalles de compras importados correctamente")
+        except FileNotFoundError:
+            print("No existe el archivo detalle_ventas.txt, se creará uno al guardar")
+
+    def guardar_detalles(self):
+        with open("detalle_compras.txt", "w", encoding="utf-8") as archivo:
+            for id_detalle, compra in self.detalle_compra.items():
+                archivo.write(
+                    f"{id_detalle};{compra.num_compra};{compra.producto};{compra.precio_compra};{compra.cantidad};"
+                    f"{compra.fecha_caducidad}\n")
 
     def agregar_detalle_compra(self, id_detalle, detalle_compra):
         self.detalle_compra[id_detalle] = detalle_compra
+        self.guardar_detalles()
 
     def aumentar_cantidad(self, id_detalle, cantidad):
         self.detalle_compra[id_detalle].cantidad += cantidad
 
 
 # MENÚ Principal
-import getpass
+# import getpass
 
-num_ventas = 0
 empleados = GestionEmpleado()
 categoria = CrearCategoria()
 proveedores = GestionProveedores()
 inventario = Inventario()
+ventas = ControlVentas()
+num_venta = len(ventas.ventas) + 1
+
 while True:
     print("---SISTEMA TIENDA---")
     print("1.Gestión de Empleados")

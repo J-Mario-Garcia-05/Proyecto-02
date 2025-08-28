@@ -311,6 +311,19 @@ class GestionEmpleado:
             return self.empleados[id_empleado]
         return None
 
+    def mostrar(self):
+        if not self.empleados:
+            print("No hay empleados registrados")
+        else:
+            for empleado in self.empleados.values():
+                print(empleado)
+
+    def despedir_empleado(self, id_empleado):
+        if id_empleado in self.empleados:
+            del self.empleados[id_empleado]
+        else:
+            print("No se encontró al empleado")
+
 
 # from datetime import datetime  # para obtener fecha y hora
 
@@ -560,6 +573,18 @@ while True:
                 correo = input("\tCorreo: ")
                 agregar_empleado = Empleados(id_empleado, nombre, departamento, telefono, direccion, correo)
                 empleados.agregar_empleado(agregar_empleado)
+        elif opcion == "2":
+            print("Empleados Registrados: ")
+            empleados.mostrar()
+        elif opcion == "3":
+            id_empleado = input("Ingrese el ID del empleado que desea despedir: ")
+            empleados.despedir_empleado(id_empleado)
+        elif opcion == "4":
+            print("Regresando al menú principal...")
+            break
+        else:
+            print("Opción no disponible")
+
     elif opcion == "2":
         if not empleados.empleados:
             print("No hay empleados en el sistema")
@@ -576,7 +601,7 @@ while True:
             continue
         while True:
             print("--MENÚ gestión de bodega--")
-            print("1.Gestión de proveedores")
+            print("1.Buscar proveedores")
             print("2.Comprar productos (actualizar stock)")
             print("3.Ver todos los productos")
             print("4.Modificar precios")
@@ -587,6 +612,22 @@ while True:
                     confirmar = input("No hay proveedores registrados, ¿desea registrar alguno? (S/N): ")
                     if confirmar.lower() == "s":
                         id_proveedor = input("Ingrese el ID del proveedor: ")
+                        nombre = input("\tNombre: ")
+                        empresa = input("\tEmpresa: ")
+                        while True:
+                            try:
+                                telefono = int(input("\tTeléfono: "))
+                                if telefono < 10000000:
+                                    print("Número de telefono no válido")
+                                    continue
+                                break
+                            except ValueError as e:
+                                print("Ha ocurrido un error: ", e)
+                        direccion = input("\tDireccion: ")
+                        correo = input("\tCorreo: ")
+                        categoria = input("\tCategoría: ")
+                        agregar_proveedor = Proveedores(id_proveedor, nombre, empresa, telefono, direccion, correo, categoria)
+                        proveedores.agregar_proveedor(agregar_proveedor)
                     elif confirmar.lower() == "n":
                         print("Regresando al menú...")
                         continue

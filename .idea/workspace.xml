@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1fecec94-025d-48f3-8e7a-170794b608bd" name="Changes" comment="Agregar metodos cargar y guardar datos">
+    <list default="true" id="1fecec94-025d-48f3-8e7a-170794b608bd" name="Changes" comment="guardar y cargar datos compras, ventas">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Proyecto_Tienda.py" beforeDir="false" afterPath="$PROJECT_DIR$/Proyecto_Tienda.py" afterDir="false" />
     </list>
@@ -76,7 +76,7 @@
       <updated>1755745593092</updated>
       <workItem from="1755745594199" duration="27377000" />
       <workItem from="1756262717971" duration="768000" />
-      <workItem from="1756263776589" duration="14604000" />
+      <workItem from="1756263776589" duration="15476000" />
     </task>
     <task id="LOCAL-00001" summary="Crear Clases base para instanciar">
       <option name="closed" value="true" />
@@ -134,7 +134,15 @@
       <option name="project" value="LOCAL" />
       <updated>1756315740332</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="guardar y cargar datos compras, ventas">
+      <option name="closed" value="true" />
+      <created>1756356122690</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1756356122690</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -159,7 +167,8 @@
     <MESSAGE value="Modificar menu inventario" />
     <MESSAGE value="Unir registro y compra de productos" />
     <MESSAGE value="Agregar metodos cargar y guardar datos" />
-    <option name="LAST_COMMIT_MESSAGE" value="Agregar metodos cargar y guardar datos" />
+    <MESSAGE value="guardar y cargar datos compras, ventas" />
+    <option name="LAST_COMMIT_MESSAGE" value="guardar y cargar datos compras, ventas" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Proyecto_Tienda$Proyecto_01.coverage" NAME="Proyecto_01 Coverage Results" MODIFIED="1755876627463" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../Proyecto 01" />

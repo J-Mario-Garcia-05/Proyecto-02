@@ -153,11 +153,18 @@ class Inventario:
     def actualizar_precio(self, codigo, nuevo_precio):
         if codigo in self.inventario:
             self.inventario[codigo].precio = nuevo_precio
+            print("Precio actualizado correctamente")
         else:
             raise ValueError("Producto no encontrado")
 
-    def actualizar_stock(self, codigo):
-        pass
+    def actualizar_stock(self, codigo, cantidad, motivo):
+        if motivo == "compra":
+            self.inventario[codigo].total_compras += cantidad
+        else:
+            if cantidad < self.inventario[codigo].stock:
+                raise ValueError("No hay stock suficiente")
+            self.inventario[codigo].total_ventas += cantidad
+        self.inventario[codigo].stock = self.inventario[codigo].total_compras - self.inventario[codigo].total_ventas
 
 
 class Proveedores:
@@ -259,6 +266,11 @@ class GestionCliente:
         else:
             raise ValueError("Ya existe un cliente con el mismo NIT")
 
+    def buscar_cliente(self, nit):
+        if nit in self.clientes:
+            return self.clientes[nit]
+        return None
+
 
 class Empleados:
     def __init__(self, id_empleado, nombre, departamento, telefono, direccion, correo):
@@ -323,9 +335,6 @@ class GestionEmpleado:
             del self.empleados[id_empleado]
         else:
             print("No se encontró al empleado")
-
-
-# from datetime import datetime  # para obtener fecha y hora
 
 
 class Ventas:
@@ -457,8 +466,8 @@ class GestionCompras:
             for id_compra, compra in self.compras.items():
                 archivo.write(f"{id_compra};{compra.fecha_hora};{compra.proveedor};{compra.empleado}\n")
 
-    def agregar_compra(self, id_compra, compra):
-        self.compras[id_compra] = compra
+    def agregar_compra(self, compra: Compras):
+        self.compras[compra.id_compra] = compra
         self.guardar_detalles()
 
     def agregar_detalle(self, id_compra, detalle):
@@ -466,22 +475,20 @@ class GestionCompras:
         self.compras[id_compra].total = sum(self.compras[id_compra].detalles.subtotal)
 
 
-class DellateCompras:
-    def __init__(self, id_dellate, num_compra, producto, precio_compra, cantidad, fecha_caducidad):
+class DetalleCompras:
+    def __init__(self, id_dellate, num_compra, producto, precio_compra, cantidad):
         self.id_dellate = id_dellate
         self.num_compra = num_compra
         self.producto = producto
         self.precio_compra = precio_compra
         self.cantidad = cantidad
-        self.fecha_caducidad = fecha_caducidad
         self.sub_total = precio_compra * cantidad
 
     def __str__(self):
         return (
             f'Compra No. {self.num_compra} \t|\t Nombre del producto: {self.producto} \t|\t '
             f'Precio de compra: {self.precio_compra}'
-            f'\t|\tCantidad comprada: {self.cantidad} \t|\t fecha de caducidad: {self.fecha_caducidad}'
-            f'\nSubtotal: {self.sub_total}')
+            f'\t|\tCantidad comprada: {self.cantidad}\nSubtotal: {self.sub_total}')
 
 
 class CrearDetalleCompra:
@@ -495,9 +502,8 @@ class CrearDetalleCompra:
                 for linea in archivo:
                     linea = linea.strip()
                     if linea:
-                        id_detalle, num_compra, producto, precio_compra, cantidad, fecha_caducidad = linea.split(";")
-                        cargar_detalle = DellateCompras(id_detalle, num_compra, producto, precio_compra, cantidad,
-                                                        fecha_caducidad)
+                        id_detalle, num_compra, producto, precio_compra, cantidad = linea.split(";")
+                        cargar_detalle = DetalleCompras(id_detalle, num_compra, producto, precio_compra, cantidad)
                         self.detalle_compra[id_detalle] = cargar_detalle
                 print("Datos de detalles de compras importados correctamente")
         except FileNotFoundError:
@@ -507,26 +513,31 @@ class CrearDetalleCompra:
         with open("detalle_compras.txt", "w", encoding="utf-8") as archivo:
             for id_detalle, compra in self.detalle_compra.items():
                 archivo.write(
-                    f"{id_detalle};{compra.num_compra};{compra.producto};{compra.precio_compra};{compra.cantidad};"
-                    f"{compra.fecha_caducidad}\n")
+                    f"{id_detalle};{compra.num_compra};{compra.producto};{compra.precio_compra};{compra.cantidad};\n")
 
-    def agregar_detalle_compra(self, id_detalle, detalle_compra):
-        self.detalle_compra[id_detalle] = detalle_compra
+    def agregar_detalle_compra(self, detalle_compra: DetalleCompras):
+        self.detalle_compra[detalle_compra.id_dellate] = detalle_compra
         self.guardar_detalles()
-
-    def aumentar_cantidad(self, id_detalle, cantidad):
-        self.detalle_compra[id_detalle].cantidad += cantidad
 
 
 # MENÚ Principal
+from datetime import datetime  # para obtener fecha y hora
+
 # import getpass
 
+clientes = GestionCliente()
 empleados = GestionEmpleado()
 categoria = CrearCategoria()
 proveedores = GestionProveedores()
 inventario = Inventario()
 ventas = ControlVentas()
+detalle_ventas = GestionDetallesVenta()
+compras = GestionCompras()
+detalle_compras = CrearDetalleCompra()
 num_venta = len(ventas.ventas) + 1
+id_detalle_venta = len(detalle_ventas.detalle_ventas) + 1
+num_compra = len(compras.compras) + 1
+id_detalle_compra = len(detalle_compras.detalle_compra) + 1
 
 while True:
     print("---SISTEMA TIENDA---")
@@ -585,14 +596,16 @@ while True:
         else:
             print("Opción no disponible")
 
+
     elif opcion == "2":
         if not empleados.empleados:
-            print("No hay empleados en el sistema")
-        buscar = empleados.buscar_empleado(input("Ingrese su ID de empleado: "))
-        if buscar is None:
+            print("No hay personal registrado")
+            continue
+        encargado = empleados.buscar_empleado(input("Ingrese su ID de empleado: "))
+        if encargado is None:
             print("El ID ingresado no existe")
             continue
-        elif buscar.departamento != "Cordinador de bodega":
+        elif encargado.departamento != "Cordinador de bodega":
             print("El empleado no pertenece al departamento de cordinador de bodega, no puede ingresar a esta área")
             continue
         pin = input("Ingrese la contraseña de acceso: ")
@@ -608,10 +621,11 @@ while True:
             print("5.Salir")
             opcion = input("\nSeleccione una opción: ")
             if opcion == "1":
-                if not proveedores.proveedores:
-                    confirmar = input("No hay proveedores registrados, ¿desea registrar alguno? (S/N): ")
+                id_proveedor = input("Ingrese el ID del proveedor: ")
+                buscar = proveedores.buscar(id_proveedor)
+                if buscar is None:
+                    confirmar = input("No existe el proveedor, ¿desea registrarlo? (S/N): ")
                     if confirmar.lower() == "s":
-                        id_proveedor = input("Ingrese el ID del proveedor: ")
                         nombre = input("\tNombre: ")
                         empresa = input("\tEmpresa: ")
                         while True:
@@ -626,7 +640,8 @@ while True:
                         direccion = input("\tDireccion: ")
                         correo = input("\tCorreo: ")
                         categoria = input("\tCategoría: ")
-                        agregar_proveedor = Proveedores(id_proveedor, nombre, empresa, telefono, direccion, correo, categoria)
+                        agregar_proveedor = Proveedores(id_proveedor, nombre, empresa, telefono, direccion, correo,
+                                                        categoria)
                         proveedores.agregar_proveedor(agregar_proveedor)
                     elif confirmar.lower() == "n":
                         print("Regresando al menú...")
@@ -634,7 +649,19 @@ while True:
                     else:
                         print("Confirmación no válida, regresando al menú...")
                         continue
+                else:
+                    print(buscar)
             elif opcion == "2":
+                if not proveedores.proveedores:
+                    print("Aún no hay proveedores, registre al menos uno en la opción 1")
+                    continue
+                id_proveedor = input("\tIngrese el Id del proveedor: ")
+                if proveedores.buscar(id_proveedor) is None:
+                    print("No se encontró a el proveedor")
+                    continue
+                agregar_compra = Compras(num_compra, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), id_proveedor,
+                                         encargado.nombre)
+                compras.agregar_compra(agregar_compra)
                 print("Ralizar compras (ingrese 0 para finalizar):")
                 while True:
                     codigo = input("Ingrese el código de producto: ")
@@ -666,32 +693,130 @@ while True:
                                     break
                                 except ValueError:
                                     print("ERROR: Precio ingresado no válido")
-                            producto = Productos(codigo, nombre, categoria, precio)
-                            inventario.agregar_producto(producto)
+                            buscar = Productos(codigo, nombre, categoria, precio)
+                            inventario.agregar_producto(buscar)
                             break
                         elif confirmar.lower() == "n":
-                            pass
+                            continue
                         else:
                             print("Confirmación no válida")
+                            continue
                     while True:
                         try:
-                            cantidad = int(input(f"\tCantidad de {buscar} que desea comprar: "))
+                            cantidad = int(input(f"\tCantidad de {buscar.nombre} que desea comprar: "))
                             if cantidad < 0:
                                 raise ValueError("El cantidad debe ser mayor a 0")
+                            while True:
+                                precio_compra = float(input("\tPrecio precio de compra: Q."))
+                                if precio_compra < 0:
+                                    raise ValueError("El precio debe ser mayor a 0")
+                                agregar_detalle_compra = DetalleCompras(id_detalle_compra, num_compra, buscar.id_producto,
+                                                                        precio_compra, cantidad)
+                                detalle_compras.agregar_detalle_compra(agregar_detalle_compra)
+                                compras.agregar_detalle(agregar_detalle_compra.id_dellate, agregar_detalle_compra)
+                                id_detalle_venta += 1
+                                break
                             break
                         except ValueError as e:
                             print("Ha ocurrido un error: ", e)
-                    id_proveedor = input("\tIngrese el Id del proveedor: ")
-                    if proveedores.buscar(id_proveedor) is None:
-                        print("No se encontre a ningún proveedor")
-                        continue
+                print("Compras realizadas correctamente")
+                num_compra += 1
+            elif opcion == "3":
+                clave = input("Ordenar por (nombre, precio, stock): ").lower()
+                if clave not in ["nombre", "precio", "stock"]:
+                    print("Orden no valido, se ordenará por nombre")
+                    clave = "nombre"
+                productos = inventario.listar_productos(clave)
+                if productos:
+                    for p in productos:
+                        print(p)
+                else:
+                    print("No se encontraron productos")
+            elif opcion == "4":
+                if not inventario.inventario:
+                    print("No hay productos registrados")
+                    continue
+
+                while True:
+                    try:
+                        codigo = input("Ingrese el código del producto: ")
+                        nuevo_precio = float(input("Ingrese el nuevo precio: Q."))
+                        inventario.actualizar_precio(codigo, nuevo_precio)
+                        break
+                    except ValueError as e:
+                        print("Ha ocurrido un error: ", e)
             elif opcion == "5":
                 print("Regresando al menú principal")
                 break
+
+
     elif opcion == "3":
         if inventario:
             print("No se ha realizado ninguna compra de los productos")
             continue
+        encargado = input("Ingrese su ID de empleado: ")
+        buscar = empleados.buscar_empleado(encargado)
+        if buscar is None or buscar.departamento.lower() != "ventas":
+            print("No existe el ID ingresado o no pertenece al departamento de ventas")
+            continue
+        pin = input("Ingrese el contraseña de acceso: ")
+        if pin != "Ventas123":
+            print("❗Acceso no permitido, contraseña incorrecta")
+            continue
+        print("--MENÚ Ventas (Cajero)--")
+        print("1.Cobrar")
+        print("2.Buscar producto")
+        print("3.Salir")
+        opcion = input("\nSeleccione una opción: ")
+        if opcion == "1":
+            nit = input("Ingrese NIT del cliente: ")
+            if nit.lower() != "cf":
+                cliente = clientes.buscar_cliente(nit)
+                if cliente is None:
+                    confirmar = input("El NIT ingresado no está registrado, ¿desea registrarlo? (S/N): ").lower()
+                    if confirmar == "s":
+                        nombre = input("\tNombre: ")
+                        while True:
+                            try:
+                                telefono = int(input("\tTeléfono: "))
+                                if telefono < 10000000:
+                                    raise ValueError("Número de teléfono no válido")
+                                direccion = input("\tDirección: ")
+                                correo = input("\tCorreo: ")
+                                cliente = Clientes(nit, nombre, telefono, direccion, correo)
+                                clientes.agregar_cliente(nit, cliente)
+                                break
+                            except ValueError as e:
+                                print("Ha ocurrido un error: ", e)
+                    elif confirmar == "n":
+                        continue
+                    else:
+                        print("Confirmación no válida")
+                        continue
+            crear_venta = Ventas(num_venta, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), nit, encargado)
+            ventas.crear_venta(crear_venta)
+            print("Ingrese los productos (ingrese 0 para finalizar):")
+            while True:
+                codigo = input("Código del producto: ")
+                if codigo == "0":
+                    break
+                producto = inventario.buscar_producto("codigo", codigo)
+                if producto is None:
+                    print("No existe ningún producto código ingresado")
+                    continue
+                while True:
+                    try:
+                        cantidad = int(input("\tCantidad: "))
+                        if cantidad < 0:
+                            raise ValueError("La cantidad debe ser mayo a 0")
+                        inventario.actualizar_stock(codigo, cantidad, "venta")
+                        crear_detalle = DetalleVentas(id_detalle_venta, num_venta, producto, cantidad, producto.precio)
+                        detalle_ventas.agregar_detalles(id_detalle_venta, crear_detalle)
+                    except ValueError as e:
+                        print("Ha ocurrido un error: ", e)
+
+
+
     elif opcion == "5":
         confirmar = input("¿Está seguro que desea salir del programa? S/N: ")
         if confirmar.lower() == "n":

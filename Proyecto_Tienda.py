@@ -46,14 +46,14 @@ class CrearCategoria:
 
 
 class Productos:
-    def __init__(self, id_producto, nombre, id_categoria, precio):
+    def __init__(self, id_producto, nombre, id_categoria, precio, total_compras, total_ventas, stock):
         self.id_producto = id_producto
         self.nombre = nombre
         self.categoria = id_categoria
         self.__precio = precio
-        self.total_compras = 0
-        self.total_ventas = 0
-        self.stock = 0
+        self.total_compras = total_compras
+        self.total_ventas = total_ventas
+        self.stock = stock
 
     @property
     def precio(self):
@@ -76,7 +76,7 @@ class Ordenador:
     @staticmethod
     def obtener_valor(producto, clave):
         if clave == "codigo":
-            return producto.codigo
+            return producto.id_producto
         elif clave == "nombre":
             return producto.nombre
         elif clave == "categoria":
@@ -103,7 +103,7 @@ class Buscador:
     def buscar(lista, clave, valor):
         resultados = []
         for producto in lista:
-            if clave == "codigo" and producto.codigo == valor:
+            if clave == "codigo" and producto.id_producto == valor:
                 resultados.append(producto)
             elif clave == "nombre" and valor.lower() in producto.nombre.lower():
                 resultados.append(producto)
@@ -123,9 +123,10 @@ class Inventario:
                 for linea in file:
                     linea = linea.strip()
                     if linea:
-                        id_producto, nombre, id_categoria, precio = linea.split(':')
-                        producto = Productos(id_producto, nombre, id_categoria, precio)
-                        self.inventario[id_categoria] = producto
+                        id_producto, nombre, id_categoria, precio, total_compras, total_ventas, stock = linea.split(':')
+                        producto = Productos(id_producto, nombre, id_categoria, float(precio), int(total_compras),
+                                             int(total_ventas), int(stock))
+                        self.inventario[id_producto] = producto
                 print("Productos importados correctamente")
         except FileNotFoundError:
             print("No existe el archivo productos.txt, se creará uno al guardar")
@@ -133,7 +134,8 @@ class Inventario:
     def guardar_productos(self):
         with open('productos.txt', 'w', encoding="utf-8") as file:
             for id_producto, producto in self.inventario.items():
-                file.write(f'{id_producto}:{producto.nombre}:{producto.categoria}:{producto.precio}\n')
+                file.write(f'{id_producto}:{producto.nombre}:{producto.categoria}:{producto.precio}:'
+                           f'{producto.total_compras}:{producto.total_ventas}:{producto.stock}\n')
 
     def agregar_producto(self, producto: Productos):
         if producto.id_producto in self.inventario:
@@ -161,7 +163,7 @@ class Inventario:
         if motivo == "compra":
             self.inventario[codigo].total_compras += cantidad
         else:
-            if cantidad < self.inventario[codigo].stock:
+            if cantidad > self.inventario[codigo].stock:
                 raise ValueError("No hay stock suficiente")
             self.inventario[codigo].total_ventas += cantidad
         self.inventario[codigo].stock = self.inventario[codigo].total_compras - self.inventario[codigo].total_ventas
@@ -308,7 +310,7 @@ class GestionEmpleado:
         with open("empleados.txt", "w", encoding="utf-8") as archivo:
             for id_empleado, empleado in self.empleados.items():
                 archivo.write(f"{id_empleado}:{empleado.nombre}:{empleado.departamento}:{empleado.telefono}:"
-                              f"{empleado.direcciom}:{empleado.correo}\n")
+                              f"{empleado.direccion}:{empleado.correo}\n")
 
     def agregar_empleado(self, empleado: Empleados):
         if empleado.id_empleado not in self.empleados:
@@ -362,8 +364,8 @@ class ControlVentas:
                 for linea in archivo:
                     linea = linea.strip()
                     if linea:
-                        id_venta, fecha_hora, nit_cliente, empleado = linea.split(";")
-                        cargar_venta = Ventas(id_venta, fecha_hora, nit_cliente, empleado)
+                        id_venta, fecha_hora, cliente, empleado = linea.split(";")
+                        cargar_venta = Ventas(id_venta, fecha_hora, cliente, empleado)
                         self.ventas[id_venta] = cargar_venta
                 print("Datos de ventas importados correctamente")
         except FileNotFoundError:
@@ -372,7 +374,7 @@ class ControlVentas:
     def guardar_ventas(self):
         with open("ventas.txt", "w", encoding="utf-8") as archivo:
             for id_venta, venta in self.ventas.items():
-                archivo.write(f"{id_venta};{venta.fecha_hora};{venta.nit_cliente};{venta.empleado}\n")
+                archivo.write(f"{id_venta};{venta.fecha_hora};{venta.cliente};{venta.empleado}\n")
 
     def crear_venta(self, venta: Ventas):
         self.ventas[venta.id_venta] = venta
@@ -380,7 +382,7 @@ class ControlVentas:
 
     def agregar_detalle(self, id_venta, detalle):
         self.ventas[id_venta].detalles.append(detalle)
-        self.ventas[id_venta].total = sum(self.ventas[id_venta].detalles.subtotal)
+        self.ventas[id_venta].total = sum(det.sub_total for det in self.ventas[id_venta].detalles)
 
 
 class DetalleVentas:
@@ -462,7 +464,7 @@ class GestionCompras:
             print("No existe el archivo compras.txt, se creará uno al guardar")
 
     def guardar_detalles(self):
-        with open("comprar.txt", "w", encoding="utf-8") as archivo:
+        with open("compras.txt", "w", encoding="utf-8") as archivo:
             for id_compra, compra in self.compras.items():
                 archivo.write(f"{id_compra};{compra.fecha_hora};{compra.proveedor};{compra.empleado}\n")
 
@@ -472,7 +474,7 @@ class GestionCompras:
 
     def agregar_detalle(self, id_compra, detalle):
         self.compras[id_compra].detalles.append(detalle)
-        self.compras[id_compra].total = sum(self.compras[id_compra].detalles.subtotal)
+        self.compras[id_compra].total = sum(det.sub_total for det in self.compras[id_compra].detalles)
 
 
 class DetalleCompras:
@@ -547,54 +549,57 @@ while True:
     print("4.Salir")
     opcion = input("\nSeleccione una opcion: ")
     if opcion == "1":
-        pin = input("Ingrese el PIN de acceso")
+        pin = input("Ingrese el PIN de acceso: ")
         if pin != "Admin123":
             print("❗Acceso no permitido, pin no válido")
             continue
-        print("--MENÚ Gestión de empleados--")
-        print("1.Contratar empleado")
-        print("2.Mostrar empleados")
-        print("3.Despedir empleado")
-        print("4.Salir")
-        opcion = input("\nSeleccione una opcion: ")
-        if opcion == "1":
-            while True:
-                print("Contratar Empleado: ")
-                id_empleado = input("ID de emplead@: ")
-                if id_empleado in empleados.empleados.keys():
-                    print("Ya existe un empleado con el id.")
-                    continue
-                nombre = input("\tNombre: ")
+        while True:
+            print("--MENÚ Gestión de empleados--")
+            print("1.Contratar empleado")
+            print("2.Mostrar empleados")
+            print("3.Despedir empleado")
+            print("4.Salir")
+            opcion = input("\nSeleccione una opcion: ")
+            if opcion == "1":
                 while True:
-                    departamento = input("\tDepartamento: ")
-                    if departamento not in ["Cordinador de bodega", "Recursos Humanos", "Gerente", "Ventas"]:
-                        print("Departamento no disponible")
+                    print("Contratar Empleado: ")
+                    id_empleado = input("ID de emplead@: ")
+                    if id_empleado in empleados.empleados.keys():
+                        print("Ya existe un empleado con el id.")
                         continue
-                    break
-                while True:
-                    try:
-                        telefono = int(input("\tTeléfono: "))
-                        if telefono < 0:
-                            print("Teléfono no válido")
+                    nombre = input("\tNombre: ")
+                    while True:
+                        departamento = input("\tDepartamento: ")
+                        if departamento not in ["Cordinador de bodega", "Recursos Humanos", "Gerente", "Ventas"]:
+                            print("Departamento no disponible")
                             continue
                         break
-                    except ValueError as e:
-                        print("Ha ocurrido un error", e)
-                direccion = input("\tDireccion: ")
-                correo = input("\tCorreo: ")
-                agregar_empleado = Empleados(id_empleado, nombre, departamento, telefono, direccion, correo)
-                empleados.agregar_empleado(agregar_empleado)
-        elif opcion == "2":
-            print("Empleados Registrados: ")
-            empleados.mostrar()
-        elif opcion == "3":
-            id_empleado = input("Ingrese el ID del empleado que desea despedir: ")
-            empleados.despedir_empleado(id_empleado)
-        elif opcion == "4":
-            print("Regresando al menú principal...")
-            break
-        else:
-            print("Opción no disponible")
+                    while True:
+                        try:
+                            telefono = int(input("\tTeléfono: "))
+                            if telefono < 0:
+                                print("Teléfono no válido")
+                                continue
+                            break
+                        except ValueError as e:
+                            print("Ha ocurrido un error", e)
+                    direccion = input("\tDireccion: ")
+                    correo = input("\tCorreo: ")
+                    agregar_empleado = Empleados(id_empleado, nombre, departamento, telefono, direccion, correo)
+                    empleados.agregar_empleado(agregar_empleado)
+                    break
+            elif opcion == "2":
+                print("Empleados Registrados: ")
+                empleados.mostrar()
+            elif opcion == "3":
+                id_empleado = input("Ingrese el ID del empleado que desea despedir: ")
+                empleados.despedir_empleado(id_empleado)
+            elif opcion == "4":
+                print("Regresando al menú principal...")
+                opcion = 0
+                break
+            else:
+                print("Opción no disponible")
 
 
     elif opcion == "2":
@@ -657,70 +662,83 @@ while True:
                     continue
                 id_proveedor = input("\tIngrese el Id del proveedor: ")
                 if proveedores.buscar(id_proveedor) is None:
-                    print("No se encontró a el proveedor")
+                    print("No se encontró al proveedor")
                     continue
+
                 agregar_compra = Compras(num_compra, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), id_proveedor,
                                          encargado.nombre)
                 compras.agregar_compra(agregar_compra)
-                print("Ralizar compras (ingrese 0 para finalizar):")
+
+                print("Realizar compras (ingrese 0 para finalizar):")
                 while True:
                     codigo = input("Ingrese el código de producto: ")
                     if codigo == "0":
                         break
-                    buscar = inventario.buscar_producto("codigo", codigo)
-                    if buscar is None:
-                        confirmar = input("El producto no existe, ¿desea registrarlo? S/N: ")
+
+                    producto = inventario.buscar_producto("codigo", codigo)
+                    if not producto:
+                        confirmar = input("El producto no existe, ¿desea registrarlo? (S/N): ")
                         if confirmar.lower() == "s":
-                            nombre = input("\tNombre: ")
+                            nombre_producto = input("\tNombre del producto: ")
                             while True:
                                 id_categoria = input("\tId de categoria: ")
                                 if categoria.buscar_categoria(id_categoria) is None:
-                                    confirmar = input("La categoría no existe, ¿Desea registrarlo? S/N: ")
+                                    confirmar = input("La categoría no existe, ¿Desea registrarla? (S/N): ")
                                     if confirmar.lower() == "s":
-                                        nombre = input("\tNombre: ")
-                                        agregar_categoria = Categorias(id_categoria, nombre)
-                                        categoria.crear_categoria(agregar_categoria)
+                                        nombre_cat = input("\tNombre de la categoría: ")
+                                        nueva_categoria = Categorias(id_categoria, nombre_cat)
+                                        categoria.crear_categoria(nueva_categoria)
                                         break
                                     elif confirmar.lower() == "n":
-                                        pass
-                                    else:
-                                        print("Confirmación no válida")
+                                        continue
+                                else:
+                                    break
+
                             while True:
                                 try:
-                                    precio = float(input("\tPrecio: Q."))
-                                    if precio < 0:
+                                    precio = float(input("\tPrecio de venta: Q."))
+                                    if precio <= 0:
                                         print("El precio debe ser mayor a 0")
+                                        continue
                                     break
                                 except ValueError:
                                     print("ERROR: Precio ingresado no válido")
-                            buscar = Productos(codigo, nombre, categoria, precio)
-                            inventario.agregar_producto(buscar)
-                            break
-                        elif confirmar.lower() == "n":
-                            continue
+
+                            producto = Productos(codigo, nombre_producto, id_categoria, precio, 0, 0, 0)
+                            inventario.agregar_producto(producto)
                         else:
-                            print("Confirmación no válida")
-                            continue
+                            continue  # vuelve al menú
+
+                    # aquí ya hay producto en inventario
                     while True:
                         try:
-                            cantidad = int(input(f"\tCantidad de {buscar.nombre} que desea comprar: "))
-                            if cantidad < 0:
-                                raise ValueError("El cantidad debe ser mayor a 0")
-                            while True:
-                                precio_compra = float(input("\tPrecio precio de compra: Q."))
-                                if precio_compra < 0:
-                                    raise ValueError("El precio debe ser mayor a 0")
-                                agregar_detalle_compra = DetalleCompras(id_detalle_compra, num_compra, buscar.id_producto,
-                                                                        precio_compra, cantidad)
-                                detalle_compras.agregar_detalle_compra(agregar_detalle_compra)
-                                compras.agregar_detalle(agregar_detalle_compra.id_dellate, agregar_detalle_compra)
-                                id_detalle_venta += 1
-                                break
+                            cantidad = int(input(f"\tCantidad a comprar: "))
+                            if cantidad <= 0:
+                                raise ValueError("La cantidad debe ser mayor a 0")
+
+                            precio_compra = float(input("\tPrecio de compra: Q."))
+                            if precio_compra <= 0:
+                                raise ValueError("El precio debe ser mayor a 0")
+
+                            agregar_detalle_compra = DetalleCompras(id_detalle_compra, num_compra,
+                                                                    producto.id_producto,
+                                                                    precio_compra, cantidad)
+                            detalle_compras.agregar_detalle_compra(agregar_detalle_compra)
+                            compras.agregar_detalle(num_compra, agregar_detalle_compra)
+
+                            # actualizar stock en inventario
+                            producto.total_compras += cantidad
+                            producto.stock = producto.total_compras - producto.total_ventas
+                            inventario.guardar_productos()
+
+                            id_detalle_compra += 1
                             break
                         except ValueError as e:
-                            print("Ha ocurrido un error: ", e)
+                            print("Ha ocurrido un error:", e)
+
                 print("Compras realizadas correctamente")
                 num_compra += 1
+
             elif opcion == "3":
                 clave = input("Ordenar por (nombre, precio, stock): ").lower()
                 if clave not in ["nombre", "precio", "stock"]:
@@ -747,12 +765,13 @@ while True:
                         print("Ha ocurrido un error: ", e)
             elif opcion == "5":
                 print("Regresando al menú principal")
+                opcion = 0
                 break
 
 
     elif opcion == "3":
-        if inventario:
-            print("No se ha realizado ninguna compra de los productos")
+        if not inventario.inventario:
+            print("No se ha realizado ninguna compra de productos")
             continue
         encargado = input("Ingrese su ID de empleado: ")
         buscar = empleados.buscar_empleado(encargado)
@@ -816,8 +835,7 @@ while True:
                         print("Ha ocurrido un error: ", e)
 
 
-
-    elif opcion == "5":
+    elif opcion == "4":
         confirmar = input("¿Está seguro que desea salir del programa? S/N: ")
         if confirmar.lower() == "n":
             print("Regresando al menú...")
@@ -826,5 +844,7 @@ while True:
             break
         else:
             print("Confirmación no válida, regresando al menú...")
+
+
     else:
         print("Opción no disponible")

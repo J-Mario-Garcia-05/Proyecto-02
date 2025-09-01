@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1fecec94-025d-48f3-8e7a-170794b608bd" name="Changes" comment="Agregar menu de ventas">
+    <list default="true" id="1fecec94-025d-48f3-8e7a-170794b608bd" name="Changes" comment="Corregir opción comprar productos">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Proyecto_Tienda.py" beforeDir="false" afterPath="$PROJECT_DIR$/Proyecto_Tienda.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/empleados.txt" beforeDir="false" afterPath="$PROJECT_DIR$/empleados.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/productos.txt" beforeDir="false" afterPath="$PROJECT_DIR$/productos.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -76,7 +78,7 @@
       <updated>1755745593092</updated>
       <workItem from="1755745594199" duration="27377000" />
       <workItem from="1756262717971" duration="768000" />
-      <workItem from="1756263776589" duration="41497000" />
+      <workItem from="1756263776589" duration="58205000" />
     </task>
     <task id="LOCAL-00001" summary="Crear Clases base para instanciar">
       <option name="closed" value="true" />
@@ -158,7 +160,15 @@
       <option name="project" value="LOCAL" />
       <updated>1756445833076</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Corregir opción comprar productos">
+      <option name="closed" value="true" />
+      <created>1756613658201</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1756613658201</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -186,10 +196,11 @@
     <MESSAGE value="guardar y cargar datos compras, ventas" />
     <MESSAGE value="Completar menú gestión de empleados" />
     <MESSAGE value="Agregar menu de ventas" />
-    <option name="LAST_COMMIT_MESSAGE" value="Agregar menu de ventas" />
+    <MESSAGE value="Corregir opción comprar productos" />
+    <option name="LAST_COMMIT_MESSAGE" value="Corregir opción comprar productos" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Proyecto_Tienda$Proyecto_01.coverage" NAME="Proyecto_01 Coverage Results" MODIFIED="1755876627463" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../Proyecto 01" />
-    <SUITE FILE_PATH="coverage/Proyecto_Tienda$Proyecto_Tienda.coverage" NAME="Proyecto_Tienda Coverage Results" MODIFIED="1756610348745" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Proyecto_Tienda$Proyecto_Tienda.coverage" NAME="Proyecto_Tienda Coverage Results" MODIFIED="1756695013105" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

@@ -1,0 +1,3 @@
+1;31/08/2025 11:40:23;Prov002;ID: B001 	|	 Nombe: Carlos 	|	 Teléfono: 23457812 	|	 Dirección: Zona 1 	|	 Correo: carlos@gmail.com
+2;31/08/2025 15:41:14;Prov001;ID: B001 	|	 Nombe: Carlos 	|	 Teléfono: 23457812 	|	 Dirección: Zona 1 	|	 Correo: carlos@gmail.com
+C003;31/08/2025 20:51:23;Prov002;ID: B001 	|	 Nombe: Carlos 	|	 Teléfono: 23457812 	|	 Dirección: Zona 1 	|	 Correo: carlos@gmail.com

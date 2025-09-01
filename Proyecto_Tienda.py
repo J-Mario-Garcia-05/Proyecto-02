@@ -33,8 +33,8 @@ class CrearCategoria:
     def crear_categoria(self, categoria: Categorias):
         if categoria.id_categoria not in self.categorias.keys():
             self.categorias[categoria.id_categoria] = categoria
-            self.cargar_categorias()
-            print(f"Categoría {categoria.id_categoria} correctamente")
+            self.guardar_categorias()
+            print(f"Categoría registrada correctamente")
         else:
             raise ValueError("Ya se ha registrado una categoría con el mismo id")
 
@@ -141,7 +141,7 @@ class Inventario:
         if producto.id_producto in self.inventario:
             raise ValueError('Ya existe un producto con el mismo código')
         self.inventario[producto.id_producto] = producto
-        self.cargar_productos()
+        self.guardar_productos()
         print("Productos agregados correctamente")
 
     def listar_productos(self, clave):
@@ -167,6 +167,7 @@ class Inventario:
                 raise ValueError("No hay stock suficiente")
             self.inventario[codigo].total_ventas += cantidad
         self.inventario[codigo].stock = self.inventario[codigo].total_compras - self.inventario[codigo].total_ventas
+        self.guardar_productos()  # 🔹 Guardar automáticamente
 
 
 class Proveedores:
@@ -199,7 +200,7 @@ class GestionProveedores:
                         id_proveedor, nombre, empresa, telefono, direccion, correo, categoria = linea.split(':')
                         proveedor = Proveedores(id_proveedor, nombre, empresa, telefono, direccion, correo, categoria)
                         self.proveedores[id_proveedor] = proveedor
-                print("Productos importados correctamente")
+                print("Proveedores  importados correctamente")
         except FileNotFoundError:
             print("No existe el archivo productos.txt, se creará uno al guardar")
 
@@ -225,12 +226,13 @@ class GestionProveedores:
 
 
 class Clientes:
-    def __init__(self, nit, nombre, telefono, direccion, correo):
+    def __init__(self, nit, nombre, direccion, telefono, correo):
         self.nit = nit
         self.nombre = nombre
-        self.telefono = telefono
         self.direccion = direccion
+        self.telefono = telefono
         self.correo = correo
+
 
     def __str__(self):
         return (f'NIT: {self.nit} \t|\t Nombre: {self.nombre} \t|\t Teléfono{self.telefono} '
@@ -249,7 +251,7 @@ class GestionCliente:
                     linea = linea.strip()
                     if linea:
                         nit, nombre, direccion, telefono, correo = linea.split(":")
-                        cliente = Clientes(nit, nombre, telefono, direccion, correo)
+                        cliente = Clientes(nit, nombre, direccion, telefono, correo)
                         self.clientes[nit] = cliente
             print("Clientes importados desde clientes.txt")
         except FileNotFoundError:
@@ -339,207 +341,197 @@ class GestionEmpleado:
             print("No se encontró al empleado")
 
 
+from datetime import datetime
+
+
 class Ventas:
-    def __init__(self, id_venta, fecha_hora, nit_cliente, empleado):
+    def __init__(self, id_venta, fecha_hora=None, nit_cliente="", empleado=""):
         self.id_venta = id_venta
-        self.fecha_hora = fecha_hora
-        self.cliente = nit_cliente
+        self.fecha_hora = fecha_hora if fecha_hora else datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        self.nit_cliente = nit_cliente
         self.empleado = empleado
         self.detalles = []
-        self.total = 0
+        self.total = 0.0
+
+    def agregar_detalle(self, detalle):
+        self.detalles.append(detalle)
+        self.total += detalle.subtotal
 
     def __str__(self):
-        return (f'Venta No. {self.id_venta} \t|\tFecha: {self.fecha_hora} \t|\tNIT de cliente: {self.cliente} '
-                f'\t|\tEncargado de venta: {self.empleado}')
+        return (f"Venta No. {self.id_venta} | Fecha: {self.fecha_hora} | "
+                f"NIT cliente: {self.nit_cliente} | Empleado: {self.empleado} | Total: Q{self.total:.2f}")
+
+
+class DetalleVenta:
+    def __init__(self, id_detalle, id_venta, id_producto, precio, cantidad):
+        self.id_detalle = id_detalle
+        self.id_venta = id_venta
+        self.id_producto = id_producto
+        self.precio = precio
+        self.cantidad = cantidad
+        self.subtotal = precio * cantidad
+
+    def __str__(self):
+        return (f"Detalle {self.id_detalle} | Producto: {self.id_producto} | "
+                f"Cantidad: {self.cantidad} | Precio: Q{self.precio:.2f} | Subtotal: Q{self.subtotal:.2f}")
 
 
 class ControlVentas:
     def __init__(self):
         self.ventas = {}
+        self.ultimo_id_venta = 0
+        self.ultimo_id_detalle = 0
         self.cargar_ventas()
 
     def cargar_ventas(self):
         try:
+            # Cargar ventas
             with open("ventas.txt", "r", encoding="utf-8") as archivo:
                 for linea in archivo:
-                    linea = linea.strip()
-                    if linea:
-                        id_venta, fecha_hora, cliente, empleado = linea.split(";")
-                        cargar_venta = Ventas(id_venta, fecha_hora, cliente, empleado)
-                        self.ventas[id_venta] = cargar_venta
-                print("Datos de ventas importados correctamente")
+                    id_venta, fecha_hora, nit_cliente, empleado = linea.strip().split(";")
+                    venta = Ventas(id_venta, fecha_hora, nit_cliente, empleado)
+                    self.ventas[id_venta] = venta
+
+                    # Actualizar último ID
+                    if id_venta.startswith("V"):
+                        num = int(id_venta[1:])
+                        self.ultimo_id_venta = max(self.ultimo_id_venta, num)
+
+            # Cargar detalles
+            with open("detalles_ventas.txt", "r", encoding="utf-8") as archivo:
+                for linea in archivo:
+                    id_detalle, id_venta, id_producto, precio, cantidad = linea.strip().split(";")
+                    detalle = DetalleVenta(id_detalle, id_venta, id_producto, float(precio), int(cantidad))
+                    if id_venta in self.ventas:
+                        self.ventas[id_venta].agregar_detalle(detalle)
+
+                    # Actualizar último ID detalle
+                    if id_detalle.startswith("DV"):
+                        num = int(id_detalle[2:])
+                        self.ultimo_id_detalle = max(self.ultimo_id_detalle, num)
+
         except FileNotFoundError:
-            print("No existe el archivo ventas.txt, se creará uno al guardar")
+            print("No existen archivos de ventas, se crearán al guardar")
 
     def guardar_ventas(self):
         with open("ventas.txt", "w", encoding="utf-8") as archivo:
-            for id_venta, venta in self.ventas.items():
-                archivo.write(f"{id_venta};{venta.fecha_hora};{venta.cliente};{venta.empleado}\n")
+            for venta in self.ventas.values():
+                archivo.write(f"{venta.id_venta};{venta.fecha_hora};{venta.nit_cliente};{venta.empleado}\n")
 
-    def crear_venta(self, venta: Ventas):
-        self.ventas[venta.id_venta] = venta
-        self.guardar_ventas()
+        with open("detalles_ventas.txt", "w", encoding="utf-8") as archivo:
+            for venta in self.ventas.values():
+                for detalle in venta.detalles:
+                    archivo.write(
+                        f"{detalle.id_detalle};{detalle.id_venta};{detalle.id_producto};{detalle.precio};{detalle.cantidad}\n")
 
-    def agregar_detalle(self, id_venta, detalle):
-        self.ventas[id_venta].detalles.append(detalle)
-        self.ventas[id_venta].total = sum(det.sub_total for det in self.ventas[id_venta].detalles)
+    def generar_id_venta(self):
+        self.ultimo_id_venta += 1
+        return f"V{self.ultimo_id_venta:03d}"
+
+    def generar_id_detalle(self):
+        self.ultimo_id_detalle += 1
+        return f"DV{self.ultimo_id_detalle:03d}"
 
 
-class DetalleVentas:
-    def __init__(self, id_detalle, num_venta, producto, cantidad, precio):
+class DetalleCompra:
+    def __init__(self, id_detalle, id_compra, id_producto, precio, cantidad):
         self.id_detalle = id_detalle
-        self.num_venta = num_venta
-        self.producto = producto
-        self.cantidad = cantidad
-        self.precio = precio
-        self.sub_total = precio * self.cantidad
-
-    def __str__(self):
-        return (f'{self.num_venta} \t|\t{self.producto} \t|\t{self.cantidad} \t|\tQ.{self.precio}'
-                f'\nSubtotal: Q.{self.sub_total:.2f}')
-
-
-class GestionDetallesVenta:
-    def __init__(self):
-        self.detalle_ventas = {}
-        self.cargar_detalles()
-
-    def cargar_detalles(self):
-        try:
-            with open("detalle_ventas.txt", "r", encoding="utf-8") as archivo:
-                for linea in archivo:
-                    linea = linea.strip()
-                    if linea:
-                        id_detalle, num_venta, producto, cantidad, precio = linea.split(";")
-                        cargar_detalle = DetalleVentas(id_detalle, num_venta, producto, cantidad, precio)
-                        self.detalle_ventas[id_detalle] = cargar_detalle
-                print("Datos de detalles de ventas importados correctamente")
-        except FileNotFoundError:
-            print("No existe el archivo detalle_ventas.txt, se creará uno al guardar")
-
-    def guardar_detalles(self):
-        with open("detalle_ventas.txt", "w", encoding="utf-8") as archivo:
-            for id_detalle, detalle in self.detalle_ventas.items():
-                archivo.write(
-                    f"{id_detalle};{detalle.num_venta};{detalle.producto};{detalle.cantidad};{detalle.precio}\n")
-
-    def agregar_detalles(self, id_detalle, detalle_ventas: DetalleVentas):
-        self.detalle_ventas[id_detalle] = detalle_ventas
-        self.guardar_detalles()
-
-    def aumentar_cantidad(self, id_detalle, cantidad):
-        self.detalle_ventas[id_detalle].cantidad += cantidad
-
-
-class Compras:
-    def __init__(self, id_compra, fecha_hora, proveedor, empleado):
         self.id_compra = id_compra
-        self.fecha_hora = fecha_hora
+        self.id_producto = id_producto
+        self.precio = float(precio)
+        self.cantidad = int(cantidad)
+
+    def subtotal(self):
+        return self.precio * self.cantidad
+
+
+class Compra:
+    def __init__(self, id_compra, fecha_hora=None, proveedor=None, empleado=None):
+        self.id_compra = id_compra
+        # Si no viene fecha, se asigna fecha actual
+        self.fecha_hora = fecha_hora or datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         self.proveedor = proveedor
         self.empleado = empleado
         self.detalles = []
-        self.total = 0
 
-    def __str__(self):
-        return (f'Código de compra: {self.id_compra} \t|\tFecha y hora de la compra: {self.fecha_hora}'
-                f'\t|\tProveedor: {self.proveedor} \t|\tEncargado de compra: {self.empleado}')
+    def agregar_detalle(self, detalle: DetalleCompra):
+        self.detalles.append(detalle)
+
+    def total(self):
+        return sum(d.subtotal() for d in self.detalles)
 
 
-class GestionCompras:
+class ControlCompras:
     def __init__(self):
         self.compras = {}
+        self.ultimo_id_compra = 0
+        self.ultimo_id_detalle = 0
         self.cargar_compras()
+
+    def guardar_compras(self):
+        with open("compras.txt", "w", encoding="utf-8") as archivo:
+            for compra in self.compras.values():
+                archivo.write(f"{compra.id_compra};{compra.fecha_hora};{compra.proveedor};{compra.empleado}\n")
+
+        with open("detalles_compras.txt", "w", encoding="utf-8") as archivo:
+            for compra in self.compras.values():
+                for detalle in compra.detalles:
+                    archivo.write(
+                        f"{detalle.id_detalle};{detalle.id_compra};{detalle.id_producto};{detalle.precio};{detalle.cantidad}\n")
 
     def cargar_compras(self):
         try:
+            # Cargar compras
             with open("compras.txt", "r", encoding="utf-8") as archivo:
                 for linea in archivo:
-                    linea = linea.strip()
-                    if linea:
-                        id_compra, fecha_hora, proveedor, empleado = linea.split(";")
-                        cargar_compra = Compras(id_compra, fecha_hora, proveedor, empleado)
-                        self.compras[id_compra] = cargar_compra
-                print("Datos de compras importados correctamente")
+                    if linea.strip():
+                        id_compra, fecha_hora, proveedor, empleado = linea.strip().split(";")
+                        compra = Compra(id_compra, fecha_hora, proveedor, empleado)
+                        self.compras[id_compra] = compra
+                        # Actualizar último ID
+                        if id_compra.startswith("C"):
+                            num = int(id_compra[1:])
+                            self.ultimo_id_compra = max(self.ultimo_id_compra, num)
         except FileNotFoundError:
-            print("No existe el archivo compras.txt, se creará uno al guardar")
+            print("No existe compras.txt, se creará uno al guardar.")
 
-    def guardar_detalles(self):
-        with open("compras.txt", "w", encoding="utf-8") as archivo:
-            for id_compra, compra in self.compras.items():
-                archivo.write(f"{id_compra};{compra.fecha_hora};{compra.proveedor};{compra.empleado}\n")
-
-    def agregar_compra(self, compra: Compras):
-        self.compras[compra.id_compra] = compra
-        self.guardar_detalles()
-
-    def agregar_detalle(self, id_compra, detalle):
-        self.compras[id_compra].detalles.append(detalle)
-        self.compras[id_compra].total = sum(det.sub_total for det in self.compras[id_compra].detalles)
-
-
-class DetalleCompras:
-    def __init__(self, id_dellate, num_compra, producto, precio_compra, cantidad):
-        self.id_dellate = id_dellate
-        self.num_compra = num_compra
-        self.producto = producto
-        self.precio_compra = precio_compra
-        self.cantidad = cantidad
-        self.sub_total = precio_compra * cantidad
-
-    def __str__(self):
-        return (
-            f'Compra No. {self.num_compra} \t|\t Nombre del producto: {self.producto} \t|\t '
-            f'Precio de compra: {self.precio_compra}'
-            f'\t|\tCantidad comprada: {self.cantidad}\nSubtotal: {self.sub_total}')
-
-
-class CrearDetalleCompra:
-    def __init__(self):
-        self.detalle_compra = {}
-        self.cargar_detalles()
-
-    def cargar_detalles(self):
         try:
-            with open("detalle_compras.txt", "r", encoding="utf-8") as archivo:
+            # Cargar detalles
+            with open("detalles_compras.txt", "r", encoding="utf-8") as archivo:
                 for linea in archivo:
-                    linea = linea.strip()
-                    if linea:
-                        id_detalle, num_compra, producto, precio_compra, cantidad = linea.split(";")
-                        cargar_detalle = DetalleCompras(id_detalle, num_compra, producto, precio_compra, cantidad)
-                        self.detalle_compra[id_detalle] = cargar_detalle
-                print("Datos de detalles de compras importados correctamente")
+                    if linea.strip():
+                        id_detalle, id_compra, id_producto, precio, cantidad = linea.strip().split(";")
+                        detalle = DetalleCompra(id_detalle, id_compra, id_producto, precio, cantidad)
+                        if id_compra in self.compras:
+                            self.compras[id_compra].agregar_detalle(detalle)
+                            # Actualizar último id_detalle
+                            if id_detalle.startswith("DC"):  # si son tipo D001
+                                num = int(id_detalle[2:])  # quitar la D y convertir a número
+                                self.ultimo_id_detalle = max(self.ultimo_id_detalle, num)
+
         except FileNotFoundError:
-            print("No existe el archivo detalle_ventas.txt, se creará uno al guardar")
+            print("No existe detalles_compras.txt, se creará uno al guardar.")
 
-    def guardar_detalles(self):
-        with open("detalle_compras.txt", "w", encoding="utf-8") as archivo:
-            for id_detalle, compra in self.detalle_compra.items():
-                archivo.write(
-                    f"{id_detalle};{compra.num_compra};{compra.producto};{compra.precio_compra};{compra.cantidad};\n")
+    def generar_id_compra(self):
+        self.ultimo_id_compra += 1
+        return f"C{self.ultimo_id_compra:03d}"
 
-    def agregar_detalle_compra(self, detalle_compra: DetalleCompras):
-        self.detalle_compra[detalle_compra.id_dellate] = detalle_compra
-        self.guardar_detalles()
+    def generar_id_detalle(self):
+        self.ultimo_id_detalle += 1
+        return f"DC{self.ultimo_id_detalle:03d}"
 
 
 # MENÚ Principal
-from datetime import datetime  # para obtener fecha y hora
 
 # import getpass
 
 clientes = GestionCliente()
 empleados = GestionEmpleado()
-categoria = CrearCategoria()
+gestor_categorias = CrearCategoria()
 proveedores = GestionProveedores()
 inventario = Inventario()
 ventas = ControlVentas()
-detalle_ventas = GestionDetallesVenta()
-compras = GestionCompras()
-detalle_compras = CrearDetalleCompra()
-num_venta = len(ventas.ventas) + 1
-id_detalle_venta = len(detalle_ventas.detalle_ventas) + 1
-num_compra = len(compras.compras) + 1
-id_detalle_compra = len(detalle_compras.detalle_compra) + 1
+compras = ControlCompras()
 
 while True:
     print("---SISTEMA TIENDA---")
@@ -570,7 +562,7 @@ while True:
                     nombre = input("\tNombre: ")
                     while True:
                         departamento = input("\tDepartamento: ")
-                        if departamento not in ["Cordinador de bodega", "Recursos Humanos", "Gerente", "Ventas"]:
+                        if departamento not in ["Coordinador de bodega", "Recursos Humanos", "Gerente", "Ventas"]:
                             print("Departamento no disponible")
                             continue
                         break
@@ -610,7 +602,7 @@ while True:
         if encargado is None:
             print("El ID ingresado no existe")
             continue
-        elif encargado.departamento != "Cordinador de bodega":
+        elif encargado.departamento != "Coordinador de bodega":
             print("El empleado no pertenece al departamento de cordinador de bodega, no puede ingresar a esta área")
             continue
         pin = input("Ingrese la contraseña de acceso: ")
@@ -644,9 +636,9 @@ while True:
                                 print("Ha ocurrido un error: ", e)
                         direccion = input("\tDireccion: ")
                         correo = input("\tCorreo: ")
-                        categoria = input("\tCategoría: ")
+                        id_categoria = input("\tId Categoría: ")
                         agregar_proveedor = Proveedores(id_proveedor, nombre, empresa, telefono, direccion, correo,
-                                                        categoria)
+                                                        id_categoria)
                         proveedores.agregar_proveedor(agregar_proveedor)
                     elif confirmar.lower() == "n":
                         print("Regresando al menú...")
@@ -660,17 +652,17 @@ while True:
                 if not proveedores.proveedores:
                     print("Aún no hay proveedores, registre al menos uno en la opción 1")
                     continue
+                num_compra = compras.generar_id_compra()
                 id_proveedor = input("\tIngrese el Id del proveedor: ")
                 if proveedores.buscar(id_proveedor) is None:
                     print("No se encontró al proveedor")
                     continue
 
-                agregar_compra = Compras(num_compra, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), id_proveedor,
-                                         encargado.nombre)
-                compras.agregar_compra(agregar_compra)
+                compra = Compra(num_compra, proveedor=id_proveedor, empleado=encargado.id_empleado)
 
                 print("Realizar compras (ingrese 0 para finalizar):")
                 while True:
+                    id_detalle_compra = compras.generar_id_detalle()
                     codigo = input("Ingrese el código de producto: ")
                     if codigo == "0":
                         break
@@ -682,12 +674,12 @@ while True:
                             nombre_producto = input("\tNombre del producto: ")
                             while True:
                                 id_categoria = input("\tId de categoria: ")
-                                if categoria.buscar_categoria(id_categoria) is None:
+                                if gestor_categorias.buscar_categoria(id_categoria) is None:
                                     confirmar = input("La categoría no existe, ¿Desea registrarla? (S/N): ")
                                     if confirmar.lower() == "s":
                                         nombre_cat = input("\tNombre de la categoría: ")
                                         nueva_categoria = Categorias(id_categoria, nombre_cat)
-                                        categoria.crear_categoria(nueva_categoria)
+                                        gestor_categorias.crear_categoria(nueva_categoria)
                                         break
                                     elif confirmar.lower() == "n":
                                         continue
@@ -720,28 +712,23 @@ while True:
                             if precio_compra <= 0:
                                 raise ValueError("El precio debe ser mayor a 0")
 
-                            agregar_detalle_compra = DetalleCompras(id_detalle_compra, num_compra,
-                                                                    producto.id_producto,
-                                                                    precio_compra, cantidad)
-                            detalle_compras.agregar_detalle_compra(agregar_detalle_compra)
-                            compras.agregar_detalle(num_compra, agregar_detalle_compra)
+                            detalle = DetalleCompra(id_detalle_compra, num_compra, codigo, precio_compra, cantidad)
+                            compra.agregar_detalle(detalle)
 
                             # actualizar stock en inventario
-                            producto.total_compras += cantidad
-                            producto.stock = producto.total_compras - producto.total_ventas
+                            inventario.actualizar_stock(codigo, cantidad, "compra")
                             inventario.guardar_productos()
 
-                            id_detalle_compra += 1
                             break
                         except ValueError as e:
                             print("Ha ocurrido un error:", e)
-
+                compras.compras[num_compra] = compra
+                compras.guardar_compras()
                 print("Compras realizadas correctamente")
-                num_compra += 1
 
             elif opcion == "3":
-                clave = input("Ordenar por (nombre, precio, stock): ").lower()
-                if clave not in ["nombre", "precio", "stock"]:
+                clave = input("Ordenar por (nombre, precio, categoria): ").lower()
+                if clave not in ["nombre", "precio", "categoria"]:
                     print("Orden no valido, se ordenará por nombre")
                     clave = "nombre"
                 productos = inventario.listar_productos(clave)
@@ -788,6 +775,7 @@ while True:
         print("3.Salir")
         opcion = input("\nSeleccione una opción: ")
         if opcion == "1":
+            num_venta = ventas.generar_id_venta()
             nit = input("Ingrese NIT del cliente: ")
             if nit.lower() != "cf":
                 cliente = clientes.buscar_cliente(nit)
@@ -802,7 +790,7 @@ while True:
                                     raise ValueError("Número de teléfono no válido")
                                 direccion = input("\tDirección: ")
                                 correo = input("\tCorreo: ")
-                                cliente = Clientes(nit, nombre, telefono, direccion, correo)
+                                cliente = Clientes(nit, nombre, direccion, telefono, correo)
                                 clientes.agregar_cliente(nit, cliente)
                                 break
                             except ValueError as e:
@@ -812,10 +800,11 @@ while True:
                     else:
                         print("Confirmación no válida")
                         continue
-            crear_venta = Ventas(num_venta, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), nit, encargado)
-            ventas.crear_venta(crear_venta)
+            venta = Ventas(num_venta, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), nit, encargado)
+
             print("Ingrese los productos (ingrese 0 para finalizar):")
             while True:
+                id_detalle_venta = ventas.generar_id_detalle()
                 codigo = input("Código del producto: ")
                 if codigo == "0":
                     break
@@ -828,12 +817,26 @@ while True:
                         cantidad = int(input("\tCantidad: "))
                         if cantidad < 0:
                             raise ValueError("La cantidad debe ser mayo a 0")
+                        crear_detalle = DetalleVenta(id_detalle_venta, num_venta, producto.id_producto, producto.precio,
+                                                     cantidad)
+                        venta.agregar_detalle(crear_detalle)
                         inventario.actualizar_stock(codigo, cantidad, "venta")
-                        crear_detalle = DetalleVentas(id_detalle_venta, num_venta, producto, cantidad, producto.precio)
-                        detalle_ventas.agregar_detalles(id_detalle_venta, crear_detalle)
+                        break
                     except ValueError as e:
                         print("Ha ocurrido un error: ", e)
+            ventas.ventas[num_venta] = venta
+            ventas.guardar_ventas()
 
+        elif opcion == "2":
+            print("--BUSCAR PRODUCTO--")
+            clave = input("Buscar por (codigo, nombre, categoria): ").lower()
+            valor = input(f"Ingrese el/la {clave} del producto: ")
+            resultados = inventario.buscar_producto(clave, valor)
+            if resultados:
+                for p in resultados:
+                    print(p)
+            else:
+                print("No se encontró ningún producto")
 
     elif opcion == "4":
         confirmar = input("¿Está seguro que desea salir del programa? S/N: ")

@@ -1,1 +1,2 @@
 Cat005:Lacteos
+Cat006:Jugos
